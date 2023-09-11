@@ -4,16 +4,15 @@
 #include <Arduino.h>
 #include <Display/display.h>
 #include "SPI.h"
-#include "MAX525.h"
+#include "MAX5250.h"
 
 //Pin definitions
 const byte DAC_CS = 10;
 const byte DAC_CL = 8;
 const byte DAC_PDL = 9;
 
-// TODO: Check the physical positions of the output connectors and remap the channels if necessary
-const byte ADC_Pins[] = {A2, A3, A0, A1};
-const byte Relais_Pins[] = {3, 2, 5, 4};
+const byte ADC_Pins[] = {A0, A2, A1, A3};
+const byte Relais_Pins[] = {5, 3, 4, 2};
 
 //Hardware defined paramteres
 const float V_REF = 4.096;
@@ -24,10 +23,11 @@ const float FULLRANGE = 5.0;
 float MFC_set[4] = {0.0, 0.0, 0.0, 0.0};
 float MFC_is[4] = {0.0, 0.0, 0.0, 0.0,};
 
-MAX525 MAX_DAC(DAC_CS,DAC_CL,DAC_PDL, V_REF, GAIN);
+MAX5250 MAX_DAC(DAC_CS,DAC_CL,DAC_PDL, V_REF, GAIN);
 
 float calc_set_voltage(float set_percentage);
 float calc_is_percentage(int codec);
+byte channel_idx(byte channel);
 
 void read_ADC();
 void set_DAC();
@@ -65,9 +65,25 @@ void set_DAC()
 {
     for(uint8_t channel = 0; channel <= 3; channel++)
     {
-        float voltage = calc_set_voltage(MFC_set[channel]);
-        MAX_DAC.write_DAC(channel, voltage, MAX525::LOAD_UD);
+        float voltage = calc_set_voltage(MFC_set[channel_idx(channel)]);
+        MAX_DAC.write_DAC(channel, voltage, MAX5250::LOAD_UD);
     }
+}
+
+byte channel_idx(byte channel)
+{
+    switch(channel)
+    {
+        case 0:
+            return 1;
+        case 1:
+            return 3;
+        case 2:
+            return 0;
+        case 3:
+            return 2;
+    }
+    return -1;
 }
 
 float calc_set_voltage(float set_percentage)
